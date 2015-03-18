@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html>
+<head lang="zh">
+    <meta charset="UTF-8">
+    <title></title>
+    <style type="text/css">
+        body{
+            -webkit-box-sizing: border-box;
+            -moz-box-sizing: border-box;
+            box-sizing: border-box;
+            font-size: 16px;
+        }
+        #dialogbg{
+            position: fixed;
+            left: 0px;
+            top: 0px;
+            width: 100%;
+            height: 100%;
+            z-index:999;
+            display: none;
+            filter:alpha(opacity=50);
+            background:#444444;
+            background:rgba(44,44,44,0.4);
+
+        }
+        #dialog{
+            width: 300px;
+            height: 150px;
+            box-sizing: inherit;
+            position: absolute;
+            display: none;
+            z-index:1000;
+        }
+        #title{
+            background-color: dodgerblue;
+            color: white;
+            height: 30px;
+            line-height: 30px;
+            padding: 5px;
+            text-align: left;
+            vertical-align: middle;
+            border-top-right-radius: 5px;
+            border-top-left-radius: 5px;
+            position: relative;
+        }
+        .inner{
+            padding: 10px;
+            background-color: #ffffff;
+            text-align: center;
+            height:120px;
+        }
+        .center{
+            text-align: center;
+            vertical-align: middle;
+            height: 70px;
+            line-height: 70px;
+        }
+        #namegroup{
+            display: none;
+        }
+        #button{
+            height: 40px;
+        }
+        .btn{
+            background-color: #0066cc;
+            height: 30px;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        #cancel{
+            margin-left: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+<div id="memu">
+    <a href="javascript:msgalert('徐xx要去上班啦')">alert</a>
+    <a href="javascript:msgalert('LMM你确定去上班吗？',function(t){alert(t)})">confirm</a>
+    <a href="javascript:msgalert('姓名：',function(t){alert(t)},'匿名')">prompt</a>
+</div>
+
+<!-- style="display: none"-->
+<div id="dialogbg"></div>
+<div id="dialog" >
+    <div id="title">消息</div>
+    <div class="inner">
+        <div class="center" id="msg">
+        </div>
+        <div class="center" id="namegroup">
+            <label id="namelabel" for="name"></label>
+            <input type="text" id="name">
+        </div>
+        <div id="button">
+            <button class="btn" id="confirm">确定</button>
+            <button  class="btn" id="cancel">取消</button>
+        </div>
+    </div>
+</div>
+<script>
+    var EventUtil={
+        addHandler:function(ele,type,handler){
+            if(ele.addEventListener){
+                ele.addEventListener(type,handler,false);
+            }else if(ele.attachEvent){
+                ele.attachEvent('on'+type,handler)
+            }else {
+                ele["on" + type] = handler;
+            }
+        },
+        removeHandler:function(ele,type,handler){
+            if(ele.removeEventListener){
+                ele.removeEventListener(type,handler,false);
+            }else if(ele.detachEvent){
+                ele.detachEvent('on'+type,handler)
+            }else {
+                ele["on" + type] = null;
+            }
+        },
+        getEvent:function(eve){
+            return event!==null?event:window.event;
+        },
+        getTarget:function(event){
+            return event.target||event.srcElement;
+        },
+        preventDefault:function(event){
+            if(event.preventDefault){
+                event.preventDefault();
+            }else{
+                event.returnValue=false;
+            }
+        },
+        stopPropagation:function(event){
+            if(event.stopPropagation){
+                event.stopPropagation()
+            }else{
+                event.cancelBubble=true;
+            }
+        }
+    }
+    function msgalert(msg,func,content){
+        /* var text=document.createTextNode(msg);*/
+        var dialogbg=document.getElementById('dialogbg');
+        var dialog=document.getElementById('dialog');
+        var msgDiv=document.getElementById('msg');
+        var confirmButton=document.getElementById('confirm');
+        var cancelButton=document.getElementById('cancel');
+        var name=document.getElementById('name');
+        var namegroup=document.getElementById('namegroup');
+        var namelabel=document.getElementById('namelabel');
+        var show=function(){
+            dialogbg.style.display='block';
+            dialog.style.display='block';
+            dialog.style.left=(dialogbg.offsetWidth-dialog.offsetWidth)/2+'px';
+            dialog.style.top=(dialogbg.offsetHeight-dialog.offsetHeight)/2+'px';
+        }
+        var hide=function(){
+            dialog.style.display='none';
+            dialogbg.style.display='none';
+            cancelButton.style.display='none';
+            namegroup.style.display='none';
+            msgDiv.style.display='block';
+        }
+        if(func&&content){
+            msgDiv.style.display='none';
+            namegroup.style.display='block';
+            cancelButton.style.display='inline-block';
+            namelabel.innerHTML=msg;
+            name.value=content;
+
+            confirmButton.onclick=function(){
+                console.log(name.value);
+                var nameValue=(name.value)?name.value:content;
+                func(nameValue);
+                hide();
+            };
+            cancelButton.onclick=function(){
+                func(content);
+                hide();
+            };
+        }else if(func){
+            msgDiv.innerHTML=msg;
+            cancelButton.style.display='inline-block';
+            confirmButton.onclick=function(){
+                func(true);
+                hide();
+            };
+            cancelButton.onclick=function(){
+                func(false);
+                hide();
+            };
+        }else{
+            msgDiv.innerHTML=msg;
+            confirmButton.onclick=function(){
+                hide();
+            };
+        }
+        show();
+        /*添加拖动事件*/
+        drag(dialog,dialogbg);
+        /*添加窗口大小变化事件*/
+        EventUtil.addHandler(window,'resize',function(){
+            dialog.style.left=(dialogbg.offsetWidth-dialog.offsetWidth)/2+'px';
+            dialog.style.top=(dialogbg.offsetHeight-dialog.offsetHeight)/2+'px';
+        });
+
+        function drag(dialog,dialogbg){
+            var diffX=0,diffY= 0;
+            var doc=window.document;
+            var titleDiv=window.document.getElementById('title');
+            EventUtil.addHandler(titleDiv,'mousedown',mouseDown);
+            function mouseDown(e){
+                EventUtil.stopPropagation(e);
+                EventUtil.preventDefault(e);
+                e=EventUtil.getEvent(event);
+                dialog.style.cursor='move';
+                if(e.setCapture){
+                    EventUtil.addHandler(dialog,'losecapture',mouseUp);
+                }else{
+                    EventUtil.addHandler(window,'blur',mouseUp);
+                }
+                diffX= e.clientX-dialog.offsetLeft;
+                diffY= e.clientY-dialog.offsetTop;
+                EventUtil.addHandler(doc,'mousemove',mouseMove);
+                EventUtil.addHandler(doc,'mouseup',mouseUp);
+            }
+            function mouseMove(e){
+                var maxX=dialogbg.offsetWidth-dialog.offsetWidth,
+                        maxY=dialogbg.offsetHeight-dialog.offsetHeight;
+                var area={
+                    minX:0,
+                    maxX:maxX,
+                    minY:0,
+                    maxY:maxY
+                }
+                var moveX,moveY;
+                moveX=(e.clientX-diffX);
+                moveY=(e.clientY-diffY);
+                (moveX<area.minX)&&(moveX=area.minX);
+                (moveX>area.maxX)&&(moveX=area.maxX);
+                (moveY<area.minY)&&(moveY=area.minY);
+                (moveY>area.maxY)&&(moveY=area.maxY);
+                dialog.style.left=moveX +'px';
+                dialog.style.top=moveY+'px';
+            }
+            function mouseUp(e){
+                dialog.style.cursor='default';
+                if(e.setCapture){
+                    EventUtil.addHandler(dialog,'losecapture',mouseUp);
+                }else{
+                    EventUtil.addHandler(window,'blur',mouseUp);
+                }
+                EventUtil.removeHandler(doc,'mousemove',mouseMove);
+                EventUtil.removeHandler(doc,'mouseup',mouseUp);
+            }
+        }
+
+    }
+</script>
+
+
+</body>
+</html>
